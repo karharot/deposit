@@ -10,7 +10,6 @@ RUN apt-get update && \
     build-essential
 
 RUN pip install --upgrade pip
-
 RUN pip install poetry
 
 RUN poetry config virtualenvs.create false
@@ -19,6 +18,6 @@ COPY pyproject.toml poetry.lock /app/
 
 RUN poetry install
 
-COPY app /app
+COPY .. /app
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["poetry", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
