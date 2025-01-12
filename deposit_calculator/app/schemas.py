@@ -1,19 +1,16 @@
 from pydantic import BaseModel, field_validator, ConfigDict
-from datetime import datetime
 
 
 class DepositRequest(BaseModel):
-    data: str
+    date: str
     periods: int
     amount: int
     rate: float
 
-    @field_validator("data")
-    def validate_data(cls, value):
-        try:
-            datetime.strptime(value, "%d.%m.%Y")
-        except ValueError:
-            raise ValueError("Invalid date format. Use DD.MM.YYYY.")
+    model_config = ConfigDict(populate_by_name=True)
+
+    @field_validator("date")
+    def validate_date(cls, value: str):
         return value
 
     @field_validator("periods")
@@ -36,7 +33,6 @@ class DepositRequest(BaseModel):
 
 
 class DepositResponse(BaseModel):
-
     model_config = ConfigDict(
         from_attributes=True,
     )

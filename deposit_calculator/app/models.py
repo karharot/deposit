@@ -6,7 +6,15 @@ from app.base_model import Base
 
 class Deposit(Base):
 
-    date: Mapped[str] = mapped_column(String)
-    periods: Mapped[int] = mapped_column(Integer)
-    amount: Mapped[int] = mapped_column(Integer)
-    rate: Mapped[float] = mapped_column(Float)
+    date: Mapped[str] = mapped_column(
+        String()
+    )
+    periods: Mapped[int] = mapped_column(
+        Integer()
+    )
+    amount: Mapped[int] = mapped_column(
+        Integer()
+    )
+    rate: Mapped[float] = mapped_column(
+        Float()
+    )
