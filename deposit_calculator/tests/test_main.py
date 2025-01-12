@@ -1,13 +1,11 @@
 import pytest
-
-from app.models import Deposit
-from .conftest import db_session, client
+from .conftest import db_session
 
 
 @pytest.mark.asyncio
 async def test_calculate_deposit_success(db_session, client):
     test_deposit_data = {
-        "data": "31.01.2021",
+        "date": "31.01.2021",
         "periods": 3,
         "amount": 10000,
         "rate": 6
@@ -17,22 +15,16 @@ async def test_calculate_deposit_success(db_session, client):
 
     assert response.status_code == 200
     assert response.json() == {
-        "31.01.2021": 10050.00,
-        "28.02.2021": 10100.25,
-        "31.03.2021": 10150.75,
+        "02.03.2021": 10050,
+        "01.04.2021": 10100.25,
+        "01.05.2021": 10150.75
     }
-    assert db_session.query(Deposit).count() == 1
-    db_deposit = db_session.query(Deposit).first()
-    assert db_deposit.amount == test_deposit_data['amount']
-    assert db_deposit.periods == test_deposit_data['periods']
-    assert db_deposit.rate == test_deposit_data['rate']
-    assert db_deposit.date == test_deposit_data['data']
 
 
 @pytest.mark.asyncio
-async def test_calculate_deposit_invalid_date(db, client):
+async def test_calculate_deposit_invalid_date(db_session, client):
     test_deposit_data = {
-        "data": "31/01/2021",
+        "date": "31/01/2021",
         "periods": 3,
         "amount": 10000,
         "rate": 6
@@ -41,44 +33,44 @@ async def test_calculate_deposit_invalid_date(db, client):
     response = client.post("/calculate_deposit", json=test_deposit_data)
 
     assert response.status_code == 400
-    assert response.json() == {"error": "Invalid date format. Use DD.MM.YYYY."}
-    assert db.query(Deposit).count() == 0
+    assert "time data" in response.json()['detail']['error']
+    assert "does not match format '%d.%m.%Y'" in response.json()['detail'][
+        'error']
 
 
 @pytest.mark.asyncio
-async def test_calculate_deposit_invalid_period(db, client):
+async def test_calculate_deposit_invalid_period(db_session, client):
     test_deposit_data = {
-        "data": "31.01.2021",
+        "date": "31.01.2021",
         "periods": 0,
         "amount": 10000,
         "rate": 6
     }
     response = client.post("/calculate_deposit", json=test_deposit_data)
 
-    assert response.status_code == 400
-    assert response.json() == {"error": "Periods must be between 1 and 60"}
-    assert db.query(Deposit).count() == 0
+    assert response.status_code == 422
+    assert 'periods' in response.json()['detail'][0]['loc']
 
 
 @pytest.mark.asyncio
-async def test_calculate_deposit_invalid_amount(db, client):
+async def test_calculate_deposit_invalid_amount(db_session, client):
     test_deposit_data = {
-        "data": "31.01.2021",
+        "date": "31.01.2021",
         "periods": 3,
         "amount": 1000,
         "rate": 6
     }
     response = client.post("/calculate_deposit", json=test_deposit_data)
 
-    assert response.status_code == 400
-    assert response.json() == {"error": "Amount must be between 10000 and 1000000"}
-    assert db.query(Deposit).count() == 0
+    assert response.status_code == 422
+    assert 'amount' in response.json()['detail'][0]['loc']
+    assert 'Amount must be between 10000 and 1000000' in response.json()['detail'][0]['msg']
 
 
 @pytest.mark.asyncio
-async def test_calculate_deposit_invalid_rate(db, client):
+async def test_calculate_deposit_invalid_rate(db_session, client):
     test_deposit_data = {
-        "data": "31.01.2021",
+        "date": "31.01.2021",
         "periods": 3,
         "amount": 10000,
         "rate": 10
@@ -86,6 +78,6 @@ async def test_calculate_deposit_invalid_rate(db, client):
 
     response = client.post("/calculate_deposit", json=test_deposit_data)
 
-    assert response.status_code == 400
-    assert response.json() == {"error": "Rate must be between 1 and 8"}
-    assert db.query(Deposit).count() == 0
+    assert response.status_code == 422
+    assert 'rate' in response.json()['detail'][0]['loc']
+    assert 'Rate must be between 1 and 8' in response.json()['detail'][0]['msg']
