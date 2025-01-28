@@ -1,17 +1,15 @@
 import logging
-from contextlib import asynccontextmanager
 import uvicorn
-from fastapi import FastAPI, HTTPException, Depends
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import SQLAlchemyError
 
-from app.database import get_db, engine
-from .deposit import calculate_deposit
-from app.models import Deposit
-from .schemas import DepositRequest
-from typing import Dict
+from app.routers import router
+from app.errors import value_error_handler, db_error_handler
+from app.database import engine
 
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -22,47 +20,16 @@ async def lifespan(main_app: FastAPI):
     # shutdown
     await engine.dispose()
 
-
 app = FastAPI(
     default_response_class=ORJSONResponse,
     docs_url="/docs",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
+app.include_router(router)
 
-@app.post("/calculate_deposit",
-          response_model=Dict[str, float],
-          status_code=200
-          )
-async def calculate(request: DepositRequest, db: AsyncSession = Depends(get_db)):
-    try:
-        result = calculate_deposit(request.date, request.periods, request.amount, request.rate)
-        deposit_date = {
-            "date": request.date,
-            "periods": request.periods,
-            "amount": request.amount,
-            "rate": request.rate,
-        }
-        db_deposit = Deposit(**deposit_date)
-        logger.info(f"db_deposit: {db_deposit}")
-        db.add(db_deposit)
-        try:
-            await db.flush()
-            await db.commit()
-        except Exception as e:
-            logger.error(f"Error saving to database: {e}")
-            await db.rollback()
-            raise HTTPException(
-                status_code=500,
-                detail={"error": "Internal server error during database operation"}
-            )
-        return result
-    except ValueError as e:
-        raise HTTPException(
-            status_code=400,
-            detail={"error": str(e)}
-        )
-
+app.add_exception_handler(ValueError, value_error_handler)
+app.add_exception_handler(SQLAlchemyError, db_error_handler)
 
 if __name__ == "__main__":
     uvicorn.run(
