@@ -2,7 +2,7 @@
 name = "deposit"
 version = "0.1.0"
 description = ""
-authors = ["anakin <lord.al@icloud.com>"]
+authors = [""]
 package-mode = false
 
 [tool.poetry.dependencies]
@@ -18,8 +18,12 @@ asyncpg = "^0.30.0"
 httpx = "^0.28.1"
 pytest-asyncio = "^0.25.2"
 orjson = "^3.10.14"
-pytest-cov = "^6.0.0"
 pytest-xdist = "^3.6.1"
+pyyaml = "^6.0.2"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest-cov = "^6.0.0"
 
 
 [build-system]
