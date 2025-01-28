@@ -1,5 +1,4 @@
 import pytest
-from .conftest import db_session
 
 
 @pytest.mark.asyncio
